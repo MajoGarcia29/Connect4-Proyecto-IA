@@ -25,7 +25,7 @@ def aplicar_accion(board: np.ndarray, col: int, player: int) -> np.ndarray:
 #Aplica la accion de colocar una ficha del jugador en la columna especificada
 
 
-def hay_ganador(board: np.ndarray, player: int) -> bool:
+def hay_ganador(board: np.ndarray, player: int) -> bool: #determina si el jugador seleccionado hizo un 4 en fila revisando 4 direcciones
 
     for r in range(6):
         for c in range(7):
@@ -80,22 +80,16 @@ def es_terminal(board: np.ndarray) -> bool:
     )
 
 
-def recompensa_final(
-    board: np.ndarray,
-    mi_jugador: int
-) -> float:
+def recompensa_final(board: np.ndarray, mi_jugador: int) -> float:
 
     if hay_ganador(board, mi_jugador):
-
         return 1.0
 
     if hay_ganador(board, -mi_jugador):
-
         return -1.0
 
     return 0.0
 
 
 def key(board: np.ndarray) -> bytes:
-
     return board.tobytes()
