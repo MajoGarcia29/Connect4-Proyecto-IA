@@ -34,11 +34,7 @@ class TablaQ:
             U - self._q[k][accion]
         ) / n
 
-    def mejor_accion(
-        self,
-        board,
-        acciones: list
-    ) -> int:
+    def mejor_accion(self, board, acciones: list) -> int:
 
         vals = self._q.get(
             key(board),
