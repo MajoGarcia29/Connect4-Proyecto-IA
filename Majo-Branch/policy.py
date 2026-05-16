@@ -24,7 +24,7 @@ class FVMCPolicy(Policy):
         self._q = TablaQ()
         self._rng = np.random.RandomState(42)
 
-    def mount(self, timeout=None) -> None: #el entrenamiento. Simplemente juega 5000 partidas y aprende de cada una
+    def train(self, timeout=None) -> None: #el entrenamiento. Simplemente juega 5000 partidas y aprende de cada una
         for _ in range(self.n_partidas):
             trayectoria = self._jugar_partida()
             self._actualizar_q(trayectoria)
@@ -40,9 +40,8 @@ class FVMCPolicy(Policy):
             siguiente = aplicar_accion(s, a, jugador)
             if hay_ganador(siguiente, jugador):
                 return a
+            
         oponente = -jugador
-
-
         for a in acciones:
             siguiente = aplicar_accion(s, a, oponente)
             if hay_ganador(siguiente, oponente):
@@ -74,27 +73,9 @@ class FVMCPolicy(Policy):
                 acciones
             )
 
-            trayectoria.append(
-                (
-                    board.copy(),
-                    accion,
-                    jugador
-                )
-            )
-
-            board = aplicar_accion(
-                board,
-                accion,
-                jugador
-            )
-
-        trayectoria.append(
-            (
-                board.copy(),
-                None,
-                None
-            )
-        )
+            trayectoria.append((board.copy(), accion,jugador))
+            board = aplicar_accion(board, accion, jugador)
+        trayectoria.append((board.copy(),None,None))
 
         return trayectoria
 
@@ -109,25 +90,13 @@ class FVMCPolicy(Policy):
 
         vistos = set()
 
-        for board, accion, jugador in reversed(
-            trayectoria[:-1]
-        ):
-
+        for board, accion, jugador in reversed(trayectoria[:-1]):
             if jugador != mi_jugador:
 
                 U = -U
 
-            par = (
-                key(board),
-                accion
-            )
+            par = (key(board), accion)
 
             if par not in vistos:
-
                 vistos.add(par)
-
-                self._q.update(
-                    board,
-                    accion,
-                    U
-                )
+                self._q.update(board, accion, U)
