@@ -2,7 +2,7 @@ import numpy as np
 
 
 def jugador_actual(board: np.ndarray) -> int:
-    return -1 if np.sum(board == -1) == np.sum(board == 1) else 1 #Como asi que else 1?
+    return -1 if np.sum(board == -1) == np.sum(board == 1) else 1 
 #Determina de quien es el turno
 #El rojo(-1) empieza siempre
 #np.sum(board == -1) cuenta cuantas fichas rojas hay
