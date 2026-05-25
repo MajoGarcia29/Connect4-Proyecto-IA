@@ -40,17 +40,19 @@ La política de entrenamiento utiliza exploración epsilon-greedy.
 # Estructura de archivos
 
 ```text
-FVMC_AGENT/
+mi_agente/
 │
 ├── policy.py
+├── guardar_qvalues.py
 ├── qvalues_majo.pkl
 ├── entrega.ipynb
 ├── README.md
 ```
 
-- `policy.py` → implementación del agente
-- `qvalues_majo.pkl` → Q-values entrenados
-- `entrega.ipynb` → notebook con experimentos y gráficas
+- `policy.py` → implementación principal del agente FVMC
+- `guardar_qvalues.py` → script para entrenar el agente y guardar los Q-values
+- `qvalues_majo.pkl` → archivo con los Q-values entrenados
+- `entrega.ipynb` → notebook con experimentos, análisis y gráficas
 - `README.md` → guía de uso
 
 ---
@@ -67,12 +69,30 @@ pip install numpy matplotlib
 
 ---
 
-# Uso
+# Generar Q-values
+
+Antes de ejecutar el notebook `entrega.ipynb`, es necesario generar el archivo:
+
+```text
+qvalues_majo.pkl
+```
+
+Este archivo se crea ejecutando:
+
+```bash
+python guardar_qvalues.py
+```
+
+El notebook utiliza este archivo `.pkl` para cargar los Q-values previamente entrenados y realizar las evaluaciones y gráficas.
+
+---
+
+# Uso del agente
 
 ## Entrenar el agente
 
 ```python
-from fvmc_policy import FVMCPolicy
+from policy import FVMCPolicy
 
 agente = FVMCPolicy(
     n_partidas=5000,
@@ -84,7 +104,7 @@ agente.train()
 
 ---
 
-## Usar el agente
+## Obtener una acción
 
 ```python
 accion = agente.act(board)
