@@ -7,6 +7,12 @@ from connect4.policy import Policy
 from connect4.connect_state import ConnectState
 from typing import override
 
+transposition_table = {}
+
+def get_node_from_transposition(state: ConnectState):
+    key = state.board.tobytes()
+    return transposition_table.get((key, state.player))
+
 class MCTSNode:
     def __init__(self, state: ConnectState, parent=None, action=None):
         self.state = state
@@ -17,6 +23,9 @@ class MCTSNode:
         self.value = 0.0
         self._untried_actions = state.get_free_cols()
 
+        key = (state.board.tobytes(), state.player)
+        transposition_table[key] = self
+
     def is_fully_expanded(self) -> bool:
         return len(self._untried_actions) == 0
 
@@ -25,20 +34,60 @@ class MCTSNode:
         return self.state.is_final()
 
     def expand(self):
-        action = self._untried_actions.pop()
+        # 1. Identificar jugadas prioritarias (Killer Moves)
+        prioritarias = []
+        restantes = []
         
-        # CORRECCIÓN: El framework usa transition() para clonar y aplicar el movimiento a la vez
+        # Oponente
+        opp = -self.state.player
+        
+        for action in self._untried_actions:
+            # ¿Esta jugada gana el juego para mi?
+            next_s_win = self.state.transition(action)
+            if next_s_win.get_winner() == self.state.player:
+                prioritarias.append(action)
+                continue
+            
+            # ¿Esta jugada bloquea una victoria del oponente?
+            if next_s_win.get_winner() == opp: # Si al mover yo, el oponente gana, es un bloqueo
+                prioritarias.append(action)
+                continue
+                
+            restantes.append(action)
+            
+        # 2. Reordenar acciones: Prioritarias primero, el resto después
+        acciones_ordenadas = prioritarias + restantes
+        self._untried_actions = acciones_ordenadas
+        
+        # 3. Expandir la primera (ahora será siempre una killer move si existe)
+        action = self._untried_actions.pop(0) # Sacamos la mejor de la lista
         next_state = self.state.transition(action)
-        
         child = MCTSNode(next_state, parent=self, action=action)
         self.children.append(child)
         return child
 
-    def best_child(self, c_param=1.41):
-        choices_weights = [
-            (child.value / child.visits) + c_param * math.sqrt((2 * math.log(self.visits) / child.visits))
-            for child in self.children
-        ]
+    def best_child(self, c_param=1.41, q_func=None, lambda_weight=0.5):
+        choices_weights = []
+        for child in self.children:
+            # 1. Valor empírico del árbol (Winrate de las simulaciones actuales)
+            mcts_value = child.value / child.visits
+            
+            # 2. Valor histórico de la tabla Q (Aprendizaje pasado)
+            q_value = 0.0
+            if q_func is not None:
+                q_value = q_func(self.state.board, child.action)
+                
+            # Combinación PUCT (Promedio entre el árbol y la tabla Q)
+            if q_func is not None:
+                exploit = (1 - lambda_weight) * mcts_value + lambda_weight * q_value
+            else:
+                exploit = mcts_value
+                
+            # 3. Exploración UCB clásica
+            explore = c_param * math.sqrt((2 * math.log(self.visits) / child.visits))
+            
+            choices_weights.append(exploit + explore)
+            
         return self.children[np.argmax(choices_weights)]
 
 
@@ -180,8 +229,10 @@ class MCTSQAgent(Policy):
 
         for _ in range(self.iterations):
             node = root
+            # 1. Selection
             while node.is_fully_expanded() and not node.is_terminal():
-                node = node.best_child(self.c_param)
+                # Inyectamos la tabla Q directamente en las raíces del árbol MCTS
+                node = node.best_child(self.c_param, q_func=self.get_q, lambda_weight=0.5)
                 
             if not node.is_terminal():
                 node = node.expand()
@@ -209,6 +260,22 @@ class MCTSQAgent(Policy):
 
     @override
     def act(self, s: np.ndarray) -> int:
-        """Método abstracto obligatorio expuesto para interactuar con la arena del torneo."""
         state = ConnectState(s)
+        
+        # --- NUEVA OPTIMIZACIÓN: JUGADA GANADORA INMEDIATA ---
+        # Si existe una acción que gana el juego en 1 turno, tómala ya.
+        for col in state.get_free_cols():
+            next_state = state.transition(col)
+            if next_state.get_winner() == state.player:
+                return col
+        
+        # Si no hay victoria inmediata, revisa si hay que bloquear al oponente
+        opp = -state.player
+        for col in state.get_free_cols():
+            next_state = state.transition(col)
+            if next_state.get_winner() == opp:
+                return col
+        # ----------------------------------------------------
+
+        # Si no hay victoria ni peligro inmediato, ejecuta el MCTS
         return self.get_action(state)
