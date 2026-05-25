@@ -13,14 +13,12 @@ Group /
 │
 ├── MCTS.py
 ├── q_values.pkl
-├── README.md
 │
 (Raíz del torneo)
 └── test_mcts_improvements.py
 ```
 - `MCTS.py` → Implementación principal del agente MCTSAgent y la política de juego.
 - `q_values.pkl` → Archivo con los Q-values entrenados (memoria del agente).
-- `README.md` → Esta guía de uso.
 - `test_mcts_improvements.py` → Script de la raíz para entrenar el agente, comparar su rendimiento y guardar los Q-values.
 
 ## Requisitos
