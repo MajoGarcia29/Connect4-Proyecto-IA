@@ -1,5 +1,6 @@
 # Agente MCTS + Q-Values para Connect-4
 **Inteligencia Artificial — 2026**
+**Juan Diego Rojas Espitia**
 
 ## Descripción
 Este proyecto implementa un agente inteligente para jugar Connect-4 utilizando **Monte Carlo Tree Search (MCTS)** reforzado con **Q-values pre-entrenados**.
