@@ -1,0 +1,22 @@
+# ── Instanciar agentes ──────────────────────────────────────────
+mcts_agent  = MCTSAgent(iterations=500)
+rand_agent  = RandomAgent()
+
+N_VALID = 100
+
+# ── MCTS como Rojo (first_player = -1) ─────────────────────────
+print("MCTS como Rojo (-1):")
+res_red = run_games(mcts_agent, rand_agent, N_VALID, alternate=False)
+
+# ── MCTS como Amarillo (first_player = 1) ──────────────────────
+print("\nMCTS como Amarillo (1):")
+res_yellow = run_games(rand_agent, mcts_agent, N_VALID, alternate=False)
+# Nota: aquí agent2=mcts_agent, así que win del MCTS = loss del juego
+# Invertimos la semántica:
+res_yellow = {"wins":   res_yellow["losses"],
+              "losses": res_yellow["wins"],
+              "draws":  res_yellow["draws"],
+              "total":  N_VALID}
+
+print(f"\n Resultados como Rojo    → W:{res_red['wins']}  L:{res_red['losses']}  D:{res_red['draws']}")
+print(f" Resultados como Amarillo → W:{res_yellow['wins']}  L:{res_yellow['losses']}  D:{res_yellow['draws']}")
