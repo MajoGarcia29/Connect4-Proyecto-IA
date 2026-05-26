@@ -246,7 +246,7 @@ class TBOPIPolicy(Policy):
             )
             total_n += 1
             n_local[a] += 1
-            # Media incremental (Welford)
+            # Media incremental
             q_local[a] += (reward - q_local[a]) / n_local[a]
 
         # --- Paso PImp: selección greedy sobre Q local ---
