@@ -1,10 +1,11 @@
 # TBOPIPolicy — Connect 4
 
-Guía técnica para la ejecución y entrenamiento del agente.
+Guía técnica para la ejecución y entrenamiento del agente. Guía extra de ejecución de entrega.ipynb
 
 ---
 
 ## Estructura de archivos
+El agente esta desarrollado para encontrarse en su propia carpeta ubicada en la carpeta groups de tournament.
 
 ```
 policy.py          # Agente TBOPIPolicy listo para el torneo
@@ -122,3 +123,6 @@ action = policy.act(board)
 1. **Fase Base**: `python train.py --rounds 30 --games_per_round 20`
 2. **Fase de Ajuste**: `python train.py --rounds 20 --games_per_round 30 --opponent rival/policy.py`
 3. **Finalización**: Usar `qtable_alpha=0.0` en la configuración de `TBOPIPolicy` para competir.
+
+# Entrega.ipynb
+El archvo debe encontrarse al mismo nivel que tournament.py ya que utiliza la función play() para ejecutar todos los análisis. De la misma manera, la carpeta connect4 debe estar en el mismo nivel ya que tournament.py la implementa. 
