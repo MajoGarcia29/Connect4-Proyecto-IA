@@ -69,19 +69,27 @@ def rollout_policy_eps_greedy(
     player: int,
     rng: np.random.RandomState,
     eps: float = 0.3,
+    last_move: int | None = None,
+    lgr_table: dict[int, dict[int, int]] | None = None,
 ) -> int:
     """
     Política de rollout ε-greedy con heurística de columna central.
-
-    Con probabilidad eps juega aleatoriamente; de lo contrario elige
-    la columna libre más cercana al centro.
+    Añade LGRF: Prioriza la última respuesta exitosa registrada.
     """
     free = get_free_cols(board)
     if not free:
         raise ValueError("No hay columnas libres.")
+    
     if rng.random() < eps:
         return int(rng.choice(free))
-    # Selección central rápida sin pesos de Numpy
+
+    # 1. LGRF: Intentar la respuesta que funcionó antes para el movimiento del rival
+    if lgr_table is not None and last_move is not None:
+        suggested = lgr_table[player].get(last_move)
+        if suggested is not None and board[0, suggested] == 0:
+            return suggested
+
+    # 2. Selección central rápida
     for c in [3, 2, 4, 1, 5, 0, 6]:
         if board[0, c] == 0:
             return c
@@ -94,32 +102,43 @@ def rollout_policy_eps_greedy(
 
 def run_trial(
     board: np.ndarray,
-    player: int,
+    root_player: int,
     rng: np.random.RandomState,
+    last_move: int,
+    lgr_table: dict[int, dict[int, int]],
     rollout_eps: float = 0.3,
 ) -> float:
     """
     Rollout hasta estado terminal con política ε-greedy.
-
-    Retorna +1 si gana `player`, -1 si pierde, 0 si empate.
+    Actualiza la tabla LGR si hay un ganador.
     """
-    # Copiamos una sola vez al inicio del trial
     b = board.copy()
-    current = player
+    current = -root_player  # El oponente mueve después del movimiento inicial 'a'
+    trial_history = []
+    
     while True:
-        free = get_free_cols(b)
-        if not free:
+        if not get_free_cols(b):
             return 0.0
-        col = rollout_policy_eps_greedy(b, current, rng, eps=rollout_eps)
         
-        # Movimiento in-place para evitar copy() dentro del loop
+        col = rollout_policy_eps_greedy(
+            b, current, rng, eps=rollout_eps, last_move=last_move, lgr_table=lgr_table
+        )
+        trial_history.append((current, last_move, col))
+        
         for row in reversed(range(6)):
             if b[row, col] == 0:
                 b[row, col] = current
                 break
                 
         if check_winner(b, current):
-            return 1.0 if current == player else -1.0
+            winner = current
+            # Refuerzo LGRF: Guardar respuestas del ganador
+            for p, prev_m, resp in trial_history:
+                if p == winner:
+                    lgr_table[p][prev_m] = resp
+            return 1.0 if winner == root_player else -1.0
+        
+        last_move = col
         current = -current
 
 # ---------------------------------------------------------------------------
@@ -212,6 +231,7 @@ class TBOPIPolicy(Policy):
         # --- Fase TBOPI: trials con selección UCB ---
         q_local: dict[int, float] = {a: 0.0 for a in legal}
         n_local: dict[int, int] = {a: 0 for a in legal}
+        lgr_table: dict[int, dict[int, int]] = {1: {}, -1: {}}
         total_n = 0
 
         for _ in range(self.n_trials):
@@ -220,6 +240,8 @@ class TBOPIPolicy(Policy):
                 apply_move(board, a, player),
                 player,
                 rng,
+                last_move=a,
+                lgr_table=lgr_table,
                 rollout_eps=self.rollout_eps,
             )
             total_n += 1
